@@ -19,7 +19,7 @@ logging.basicConfig(
 
 class PandasProcessTimeMeasure(object):
 
-    def __init__(self, data: DataFrame, sample_sizes: List[int], number: int=10):
+    def __init__(self, sample_sizes: List[int], data: DataFrame=None, number: int=10):
         self.data = data
         self.sample_sizes = sample_sizes
         self.sample_datasets = [self.create_sample_data(n) for n in sample_sizes]
@@ -62,9 +62,13 @@ class PandasProcessTimeMeasure(object):
         for method_name, method in self.methods.items():
             logger.debug('processing method: {}'.format(method_name))
             average_process_times = []
-            for data in self.sample_datasets:
-                logger.debug('shape of data: {}, {}'.format(*data.shape))
-                _time = self.measure_average_process_time(method=method, args=(data,))
+            for n in self.sample_sizes:
+                if self.data is not None:
+                    data = self.create_sample_data(n=n)
+                    logger.debug('shape of data: {}, {}'.format(*data.shape))
+                    _time = self.measure_average_process_time(method=method, args=(data,))
+                else:
+                    _time = self.measure_average_process_time(method=method, args=(n,))
                 logger.debug('processing time: {} [sec]'.format(_time))
                 average_process_times.append(_time)
             _measurement_time.setdefault(method_name, average_process_times)
