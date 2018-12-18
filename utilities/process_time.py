@@ -3,7 +3,7 @@
 import logging
 import sys
 import timeit
-from typing import Callable, List
+from typing import Callable, List, Any
 from matplotlib import pyplot as plt
 from pandas import DataFrame
 
@@ -27,12 +27,22 @@ class PandasProcessTimeMeasure(object):
         self.methods = {}
         self.process_time = None
 
-    def set_method(self, name: str, method: Callable[[DataFrame], DataFrame]):
+    def set_method(self, name: str, method: Callable[[Any], DataFrame]):
         self.methods.setdefault(name, method)
 
-    def measure_average_process_time(self, method: Callable[[DataFrame], DataFrame], data: DataFrame) -> float:
-        def test_func():
-            method(data)
+    def measure_average_process_time(self, method: Callable[[Any], DataFrame], args: tuple=None, kwargs: dict=None) -> float:
+        if (args is None) and (kwargs is None):
+            def test_func():
+                method()
+        elif (args is not None) and (kwargs is None):
+            def test_func():
+                method(*args)
+        elif (args is None) and (kwargs is not None):
+            def test_func():
+                method(**kwargs)
+        else:
+            def test_func():
+                method(*args, **kwargs)
 
         _number = self.number
         logger.debug('number of iterations at timeit: {}'.format(_number))
@@ -54,7 +64,7 @@ class PandasProcessTimeMeasure(object):
             average_process_times = []
             for data in self.sample_datasets:
                 logger.debug('shape of data: {}, {}'.format(*data.shape))
-                _time = self.measure_average_process_time(method=method, data=data)
+                _time = self.measure_average_process_time(method=method, args=(data,))
                 logger.debug('processing time: {} [sec]'.format(_time))
                 average_process_times.append(_time)
             _measurement_time.setdefault(method_name, average_process_times)
