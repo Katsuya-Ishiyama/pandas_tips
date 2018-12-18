@@ -3,7 +3,7 @@
 import logging
 import sys
 import timeit
-from typing import Callable, List
+from typing import Callable, List, Any
 from matplotlib import pyplot as plt
 from pandas import DataFrame
 
@@ -19,20 +19,29 @@ logging.basicConfig(
 
 class PandasProcessTimeMeasure(object):
 
-    def __init__(self, data: DataFrame, sample_sizes: List[int], number: int=10):
+    def __init__(self, sample_sizes: List[int], data: DataFrame=None, number: int=10):
         self.data = data
         self.sample_sizes = sample_sizes
-        self.sample_datasets = [self.create_sample_data(n) for n in sample_sizes]
         self.number = number
         self.methods = {}
         self.process_time = None
 
-    def set_method(self, name: str, method: Callable[[DataFrame], DataFrame]):
+    def set_method(self, name: str, method: Callable[[Any], DataFrame]):
         self.methods.setdefault(name, method)
 
-    def measure_average_process_time(self, method: Callable[[DataFrame], DataFrame], data: DataFrame) -> float:
-        def test_func():
-            method(data)
+    def measure_average_process_time(self, method: Callable[[Any], DataFrame], args: tuple=None, kwargs: dict=None) -> float:
+        if (args is None) and (kwargs is None):
+            def test_func():
+                method()
+        elif (args is not None) and (kwargs is None):
+            def test_func():
+                method(*args)
+        elif (args is None) and (kwargs is not None):
+            def test_func():
+                method(**kwargs)
+        else:
+            def test_func():
+                method(*args, **kwargs)
 
         _number = self.number
         logger.debug('number of iterations at timeit: {}'.format(_number))
@@ -52,9 +61,16 @@ class PandasProcessTimeMeasure(object):
         for method_name, method in self.methods.items():
             logger.debug('processing method: {}'.format(method_name))
             average_process_times = []
-            for data in self.sample_datasets:
-                logger.debug('shape of data: {}, {}'.format(*data.shape))
-                _time = self.measure_average_process_time(method=method, data=data)
+            for n in self.sample_sizes:
+                logger.debug('loop method_name = {}, sample_size = {}'.format(method_name, n))
+                if self.data is not None:
+                    logger.debug('data is supplied')
+                    data = self.create_sample_data(n=n)
+                    logger.debug('shape of data: {}, {}'.format(*data.shape))
+                    _time = self.measure_average_process_time(method=method, args=(data,))
+                else:
+                    logger.debug('data is not supplied')
+                    _time = self.measure_average_process_time(method=method, args=(n,))
                 logger.debug('processing time: {} [sec]'.format(_time))
                 average_process_times.append(_time)
             _measurement_time.setdefault(method_name, average_process_times)

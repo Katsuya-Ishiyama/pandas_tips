@@ -5,6 +5,8 @@ from pandas import DataFrame
 from process_time import PandasProcessTimeMeasure
 
 
+# コンストラクタにdataを指定する場合
+
 def method1(data):
     sample_size = data.shape[0]
     for _ in range(sample_size):
@@ -28,6 +30,28 @@ process_time_measure = PandasProcessTimeMeasure(
 )
 process_time_measure.set_method(name='method01', method=method1)
 process_time_measure.set_method(name='method02', method=method2)
+process_time_measure.measure_process_time_for_each_sample_sizes()
+print(process_time_measure.process_time)
+process_time_measure.plot_process_time()
+
+# コンストラクタにdataを指定しない場合
+
+def method3(sample_size):
+    a = []
+    b = []
+    for _a in range(sample_size):
+        for _b in range(sample_size):
+            a.append(_a)
+            b.append(_b)
+    return DataFrame(
+        data={'a': a, 'b': b},
+        columns=['a', 'b']
+    )
+
+process_time_measure = PandasProcessTimeMeasure(
+    sample_sizes=[3, 5]
+)
+process_time_measure.set_method(name='method03', method=method3)
 process_time_measure.measure_process_time_for_each_sample_sizes()
 print(process_time_measure.process_time)
 process_time_measure.plot_process_time()
