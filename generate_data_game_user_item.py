@@ -30,6 +30,7 @@ def generate_item_master(item_num: int) -> Tuple[List[int], List[str]]:
 
 
 def generate_item_purchase_count(sample_size):
+    np.random.seed(0)
     return np.random.poisson(lam=2.2, size=sample_size).tolist()
 
 
